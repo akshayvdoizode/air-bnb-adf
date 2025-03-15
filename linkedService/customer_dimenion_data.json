@@ -1,0 +1,11 @@
+{
+	"name": "customer_dimenion_data",
+	"type": "Microsoft.DataFactory/factories/linkedservices",
+	"properties": {
+		"annotations": [],
+		"type": "AzureBlobFS",
+		"typeProperties": {
+			"url": "https://airbnbdata.dfs.core.windows.net/"
+		}
+	}
+}

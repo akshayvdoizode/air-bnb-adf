@@ -1,0 +1,125 @@
+{
+	"name": "dataflow1",
+	"properties": {
+		"type": "MappingDataFlow",
+		"typeProperties": {
+			"sources": [
+				{
+					"dataset": {
+						"referenceName": "bookings_fact_data_cosmos_dataset",
+						"type": "DatasetReference"
+					},
+					"name": "BookingData"
+				},
+				{
+					"dataset": {
+						"referenceName": "BookingsDataSynapse",
+						"type": "DatasetReference"
+					},
+					"name": "SynapseForLookUpData"
+				}
+			],
+			"sinks": [
+				{
+					"dataset": {
+						"referenceName": "bookings_fact_data_cosmos_dataset",
+						"type": "DatasetReference"
+					},
+					"name": "sink1"
+				}
+			],
+			"transformations": [
+				{
+					"name": "DataQualityCheck"
+				},
+				{
+					"name": "DerivedColumns"
+				},
+				{
+					"name": "LookupInSynapse"
+				},
+				{
+					"name": "AlterRowsForUpdate"
+				}
+			],
+			"scriptLines": [
+				"source(output(",
+				"          check_out_date as date,",
+				"          customer_id as short,",
+				"          timestamp as timestamp,",
+				"          owner_id as string,",
+				"          check_in_date as date,",
+				"          property_id as string,",
+				"          amount as double,",
+				"          booking_id as string,",
+				"          currency as string,",
+				"          property_location as (city as string, country as string),",
+				"          booking_date as timestamp",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     enableChangeFeed: true,",
+				"     changeFeedStartFromTheBeginning: false,",
+				"     format: 'document',",
+				"     systemColumns: false) ~> BookingData",
+				"source(output(",
+				"          booking_id as string,",
+				"          property_id as string,",
+				"          customer_id as integer,",
+				"          owner_id as string,",
+				"          check_in_date as date,",
+				"          check_out_date as date,",
+				"          booking_date as timestamp,",
+				"          amount as double,",
+				"          currency as string,",
+				"          city as string,",
+				"          country as string,",
+				"          full_address as string,",
+				"          stay_duration as long,",
+				"          booking_year as integer,",
+				"          booking_month as integer,",
+				"          timestamp as timestamp",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     isolationLevel: 'READ_UNCOMMITTED',",
+				"     format: 'table',",
+				"     staged: true) ~> SynapseForLookUpData",
+				"BookingData split(check_out_date<check_in_date,",
+				"     disjoint: true) ~> DataQualityCheck@(BadRecords, AcceptedRecords)",
+				"DataQualityCheck@AcceptedRecords derive(country = property_location.country,",
+				"          city = property_location.city,",
+				"          stay_duration = check_out_date-check_in_date,",
+				"          booking_year = year(booking_date),",
+				"          booking_month = month(booking_date),",
+				"          full_address = concat(property_location.city, property_location.country),",
+				"          booking_id = booking_id,",
+				"          booking_date = booking_date,",
+				"          check_out_date = check_out_date,",
+				"          check_in_date = check_in_date,",
+				"          customer_id = customer_id,",
+				"          timestamp = timestamp,",
+				"          owner_id = owner_id,",
+				"          property_id = property_id,",
+				"          amount = amount,",
+				"          currency = currency) ~> DerivedColumns",
+				"DerivedColumns, SynapseForLookUpData lookup(DerivedColumns@booking_id == SynapseForLookUpData@booking_id,",
+				"     multiple: false,",
+				"     pickup: 'first',",
+				"     desc(SynapseForLookUpData@timestamp, true),",
+				"     broadcast: 'auto')~> LookupInSynapse",
+				"LookupInSynapse alterRow(insertIf(isNull(SynapseForLookUpData@booking_id)),",
+				"     updateIf(not(isNull(SynapseForLookUpData@booking_id)))) ~> AlterRowsForUpdate",
+				"AlterRowsForUpdate sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     deletable:false,",
+				"     insertable:true,",
+				"     updateable:false,",
+				"     upsertable:true,",
+				"     format: 'document',",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true) ~> sink1"
+			]
+		}
+	}
+}

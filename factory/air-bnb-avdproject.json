@@ -1,0 +1,9 @@
+{
+	"name": "air-bnb-avdproject",
+	"location": "centralindia",
+	"identity": {
+		"type": "SystemAssigned",
+		"principalId": "1394f11a-4179-4c8b-a519-4b74f1a7769f",
+		"tenantId": "542a4aed-eac5-488c-9021-a2b3e050e435"
+	}
+}

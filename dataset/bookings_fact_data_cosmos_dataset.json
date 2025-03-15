@@ -1,0 +1,16 @@
+{
+	"name": "bookings_fact_data_cosmos_dataset",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "bookings_fact_data",
+			"type": "LinkedServiceReference"
+		},
+		"annotations": [],
+		"type": "CosmosDbSqlApiCollection",
+		"schema": {},
+		"typeProperties": {
+			"collectionName": "bookings"
+		}
+	},
+	"type": "Microsoft.DataFactory/factories/datasets"
+}
